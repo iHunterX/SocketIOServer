@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <title>Loc's SocketServer</title>
+</head>
+<body>
+
+<script src="http://cdn.socket.io/stable/socket.io.js"></script>
+<script src='/socket.io/socket.io.js'></script>
+<script type="text/javascript">
+   var socket = io.connect('http://localhost:5000');
+   socket.on('connect', function() {
+      console.log('connected');
+   });
+</script>
+</body>
+</html>
