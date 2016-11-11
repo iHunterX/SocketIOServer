@@ -46,12 +46,12 @@ io.sockets.on('connection', function(socket){
   socket.on("startType", function(clientNickname){
     console.log("User " + clientNickname + " is writing a message...");
     typingUsers[clientNickname] = 1;
-    socket.emit("userTypingUpdate", typingUsers);
+    socket.emit("userTypingUpdate", true);
   });
   socket.on("stopType", function(clientNickname){
     console.log("User " + clientNickname + " has stopped writing a message...");
-    delete typingUsers[clientNickname];
-    socket.emit("userTypingUpdate", typingUsers);
+    delete typingUsers[clientNickname];  
+    socket.emit("userTypingUpdate", false);
   });
 
   socket.on('disconnect', function(){
