@@ -6,6 +6,9 @@ var io = require('socket.io').listen(sv);
 sv.listen(process.env.PORT || 5000);
 
 
+var userList = [];
+var typingUsers = {};
+
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/welcome.html');
     console.log('Socketio SV running...');
@@ -34,6 +37,22 @@ io.sockets.on('connection', function(socket){
     });
   });
 
+  socket.on('chatMessage', function(clientNickname, message){
+    var currentDateTime = new Date().toLocaleString();
+    delete typingUsers[clientNickname];
+    console.log(message);
+    socket.emit('newChatMessage', clientNickname, message, currentDateTime);
+  });
+  socket.on("startType", function(clientNickname){
+    console.log("User " + clientNickname + " is writing a message...");
+    typingUsers[clientNickname] = 1;
+    socket.emit("userTypingUpdate", typingUsers);
+  });
+  socket.on("stopType", function(clientNickname){
+    console.log("User " + clientNickname + " has stopped writing a message...");
+    delete typingUsers[clientNickname];
+    socket.emit("userTypingUpdate", typingUsers);
+  });
 
   socket.on('disconnect', function(){
     console.log('user disconnected');
