@@ -1,86 +1,147 @@
-var express = require('express');
-var app = express();
-var sv = require('http').createServer(app);
-var io = require('socket.io').listen(sv);
+// var express = require('express');
+// var app = express();
+// var sv = require('http').createServer(app);
+// var io = require('socket.io').listen(sv);
+//
+// sv.listen(process.env.PORT || 5000);
+//
 
-sv.listen(process.env.PORT || 5000);
-
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 
 var userList = [];
 var typingUsers = {};
 
-app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/welcome.html');
-    console.log('Socketio SV running...');
+app.get('/', function(req, res){
+  res.send('<h1>iHunterX-SocketChatServer</h1>');
 });
 
-io.sockets.on('connection', function(socket){
-  console.log('a Anonymous connected');
-  var addedUser = false;
+
+http.listen(5000, function(){
+  console.log('Listening on port :5000');
+});
 
 
+io.on('connection', function(clientSocket){
+  console.log('Unregistered connected');
 
-  socket.on('add user', function (username) {
-    if (addedUser) return;
+  clientSocket.on('disconnect', function(){
+    console.log('user disconnected');
 
-    // we store the username in the socket session for this client
-    socket.username = username;
-    ++numUsers;
-    addedUser = true;
-    socket.emit('login', {
-      numUsers: numUsers
-    });
-    // echo globally (all clients) that a person has connected
-    socket.broadcast.emit('user joined', {
-      username: socket.username,
-      numUsers: numUsers
-    });
-  });
+    var clientNickname;
+    for (var i=0; i<userList.length; i++) {
+      if (userList[i]["id"] == clientSocket.id) {
+        userList[i]["isConnected"] = false;
+        clientNickname = userList[i]["nickname"];
+        break;
+      }
+    }
 
-  socket.on('chatMessage', function(clientNickname, message){
-    var currentDateTime = new Date().toLocaleString();
     delete typingUsers[clientNickname];
-    console.log(message);
-    socket.emit('newChatMessage', clientNickname, message, currentDateTime);
+    io.emit("userList", userList);
+    io.emit("userExitUpdate", clientNickname);
+    io.emit("userTypingUpdate", typingUsers);
   });
-  socket.on("startType", function(clientNickname){
+
+
+  clientSocket.on("exitUser", function(clientNickname){
+    for (var i=0; i<userList.length; i++) {
+      if (userList[i]["id"] == clientSocket.id) {
+        userList.splice(i, 1);
+        break;
+      }
+    }
+    io.emit("userExitUpdate", clientNickname);
+  });
+
+
+  clientSocket.on("chatMessage", function(clientNickname, message){
+    var currentDateTime = new Date().toLocaleString();
+    console.log(message);
+    delete typingUsers[clientNickname];
+    io.emit("userTypingUpdate", typingUsers);
+    io.emit('newChatMessage', clientNickname, message, currentDateTime);
+  });
+  // clientSocket.on('chatMessage', function(clientNickname, message){
+  //   var currentDateTime = new Date().toLocaleString();
+  //   delete typingUsers[clientNickname];
+  //   io.emit("userTypingUpdate", typingUsers);
+  //   io.emit('newChatMessage', clientNickname, message, currentDateTime);
+  // });
+  clientSocket.on("registerWithUserName",function (clientNickname,callback) {
+    var userInfo = {};
+    var foundUser = false;
+    var error = null;
+    for (var i=0; i<userList.length; i++) {
+      if (userList[i]["nickname"] == clientNickname) {
+        userList[i]["isConnected"] = true
+        userList[i]["id"] = clientSocket.id;
+        userInfo = userList[i];
+        foundUser = true;
+        error = "The nickname has been taken!... Please pick another."
+        console.log(error);
+        break;
+      }
+    }
+
+    if (!foundUser) {
+      userInfo["created"] = true
+      userInfo["id"] = clientSocket.id;
+      userInfo["nickname"] = clientNickname;
+      userInfo["isConnected"] = true
+      userList.push(userInfo);
+    }
+    var info = {
+        info: userInfo,
+        error: error
+    }
+    console.log(JSON.stringify(info));
+
+    return callback(info);
+  });
+
+
+
+  clientSocket.on("connectUser", function(clientNickname) {
+    var message = "User " + clientNickname + " was connected.";
+    console.log(message);
+
+    var userInfo = {};
+    var foundUser = false;
+    for (var i=0; i<userList.length; i++) {
+      if (userList[i]["nickname"] == clientNickname) {
+        userList[i]["isConnected"] = true
+        userList[i]["id"] = clientSocket.id;
+        userInfo = userList[i];
+        foundUser = true;
+        break;
+      }
+    }
+
+    if (!foundUser) {
+      userInfo["id"] = clientSocket.id;
+      userInfo["nickname"] = clientNickname;
+      userInfo["isConnected"] = true
+      userList.push(userInfo);
+    }
+
+    io.emit("userList", userList);
+    io.emit("userConnectUpdate", userInfo)
+  });
+
+
+  clientSocket.on("startType", function(clientNickname){
     console.log("User " + clientNickname + " is writing a message...");
     typingUsers[clientNickname] = 1;
-    var typingDetails = {
-      nickName : clientNickname,
-      isTyping : true
-    }
-    socket.emit("userTypingUpdate", typingDetails);
+    io.emit("userTypingUpdate", typingUsers);
   });
-  socket.on("stopType", function(clientNickname){
+
+
+  clientSocket.on("stopType", function(clientNickname){
     console.log("User " + clientNickname + " has stopped writing a message...");
     delete typingUsers[clientNickname];
-    var typingDetails = {
-      nickName : clientNickname,
-      isTyping : false
-    }
-    socket.emit("userTypingUpdate", typingDetails);
-  });
-
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
-    if (addedUser) {
-      --numUsers;
-
-      // echo globally that this client has left
-      socket.broadcast.emit('user left', {
-        username: socket.username,
-        numUsers: numUsers
-      });
-    }
-  });
-
-  socket.on('new message', function (data) {
-// emit new message
-    socket.broadcast.emit('new message', {
-      username: socket.username,
-      message: data
-    });
+    io.emit("userTypingUpdate", typingUsers);
   });
 
 });
