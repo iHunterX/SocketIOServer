@@ -85,6 +85,7 @@ io.on('connection', function(clientSocket){
       }
     }
 
+
     if (!foundUser) {
       userInfo["created"] = true
       userInfo["id"] = clientSocket.id;
@@ -93,12 +94,22 @@ io.on('connection', function(clientSocket){
       userList.push(userInfo);
     }
     var info = {
-        info: userInfo,
+        info  : userInfo,
         error: error
     }
     console.log(JSON.stringify(info));
 
     return callback(info);
+  });
+  clientSocket.on("findingUsername",function (clientNickname,callback) {
+    var isAvailable = true;
+    for (var i=0; i<userList.length; i++) {
+      if (userList[i]["nickname"] == clientNickname) {
+        isAvailable = false;
+        break;
+      }
+    }
+    return callback(isAvailable);
   });
 
 
