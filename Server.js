@@ -9,16 +9,19 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var bodyParser = require('body-parser');
 
 var userList = [];
 var typingUsers = {};
 
 app.get('/', function(req, res){
-  res.send('<h1>iHunterX-SocketChatServer</h1>');
-
-
+    res.sendFile(__dirname + '/welcome.html');
 });
 
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json())
 
 http.listen(5000, function(){
   console.log('Listening on port :5000');
@@ -65,6 +68,24 @@ io.on('connection', function(clientSocket){
     io.emit("userTypingUpdate", typingUsers);
     io.emit('newChatMessage', clientNickname, message, currentDateTime);
   });
+
+
+
+
+  clientSocket.on("chatMessage2", function(message){
+    console.log(message);
+    // var currentDateTime = new Date().toLocaleString();
+    var messObj = JSON.parse(message);
+    // console.log(messObj);
+    
+
+    // delete typingUsers[clientNickname];
+    // io.emit("userTypingUpdate", typingUsers);
+    // io.emit('newChatMessage', clientNickname, message, currentDateTime);
+  });
+
+
+
   // clientSocket.on('chatMessage', function(clientNickname, message){
   //   var currentDateTime = new Date().toLocaleString();
   //   delete typingUsers[clientNickname];
