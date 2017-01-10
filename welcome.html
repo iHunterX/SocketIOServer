@@ -20,16 +20,23 @@
     </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="./MyModule.js"></script>
     <script>
-      var socket = io();
-      $('form').submit(function(){
-        socket.emit('chatMessage', $('#m').val());
-        $('#m').val('');
-        return false;
-      });
-      socket.on('newChatMessage', function(msg){
-        $('#messages').append($('<li>').text(msg));
-      });
+      alert('fdsfasdfas');
+    var myModule = MyModule();
+    var tong = myModule.cong(10 ,5);
+
+    alert(tong);
+      // var socket = io();
+      // $('form').submit(function(){
+      //   $('#m').val(tong);
+      //   socket.emit('chatMessage', $('#m').val());
+      //   $('#m').val('');
+      //   return false;
+      // });
+      // socket.on('newChatMessage', function(msg){
+      //   $('#messages').append($('<li>').text(msg));
+      // });
     </script>
   </body>
 </html>

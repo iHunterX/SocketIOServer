@@ -5,7 +5,7 @@
 //
 // sv.listen(process.env.PORT || 5000);
 //
-
+var myModule = require('./MyModule.js');
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -13,6 +13,14 @@ var bodyParser = require('body-parser');
 
 var userList = [];
 var typingUsers = {};
+
+
+
+var tong = myModule.cong(10, 5);
+var hieu = myModule.tru(20, 10);
+
+console.log(tong);
+console.log(hieu);
 
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/welcome.html');
@@ -76,8 +84,8 @@ io.on('connection', function(clientSocket){
     console.log(message);
     // var currentDateTime = new Date().toLocaleString();
     var messObj = JSON.parse(message);
-    // console.log(messObj);
-    
+    console.log(messObj["senderID"]);
+
 
     // delete typingUsers[clientNickname];
     // io.emit("userTypingUpdate", typingUsers);
